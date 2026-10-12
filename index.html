@@ -1,138 +1,111 @@
-<!Doctype>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> Ceaser Cipher Game </title>
     <style>
+        :root {
+            --purple: #5c438d;
+            --pruple-dark: #3e2b68;
+            --lavender: #eee7ff;
+            --pink: #f8d9f8;
+            --pink-dark: #d78ab2;
+            --ink: #38284f;
+            --white: #fffaff;
+            --green: #247547;
+            --red: #a52e4a;
+        }
+        * {box-sizing: border-box; }
+
         body {
-            font-family: Georgia, italic;
-            color:rgb(148, 121, 151);
-            background-color: lavenderblush;
+            margin: 0;
+            min-height: 100vh;
+            padding: 24px;
+            font-family: Georgia, "Times New Roman", serif;
+            color: var(--ink);
+            background: linear-gradient(135deg, #fff5fb, #eee8ff);
+        }
+
+        .container {max-width: 1050px; margin: 0 auto;}
+
+        header {
             text-align: center;
-            padding: 20px;
+            padding: 26px 18px;
+            color: white;
+            background: linear-gradient(135deg, var(--purple-dark), #7957ad);
+            border-radius: 22px;
+            box-shadow: 0 8px 22px #5c438d2b;
+            margin-bottom: 22px;
         }
-        .screen { 
-            display: none;
+
+        header h1 { margin: 0 0 8px; font-size: clamp(2rem, 5vw, 3.2rem); }
+        header p { margin: 0; font-size: 1.0rem; color: #f2eaff; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
         }
-        .active {
+
+        .stat, panel {
+            border: 1px solid #d9caff;
+            border-radius: 16px;
+            background: #ffffffb8;
+            box-shadow: 0 4px 12px #5c438d0d;
+        }
+
+        .stat { text-align: center; padding: 15px 8px; background: #e9e0ff; }
+        .stat-label { display: block; font-size: 1rem; margin-bottom: 5px; }
+        .stat strong { font-size: 1.8rem; color: var(--purple-dark); }
+
+        .panel { padding: 20px; margin-bottom: 18px;}
+        h2 { text-align: center; margin: 0 0 15px; color: #7551a9;}
+
+        .alphabet {
+            display: grid;
+            grid-template-columns: repeat(13, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+
+        .letter {
+            border: 1px solid #d2c1f3;
+            border-radius: 9px;
+            padding: 9px 2px;
+            text-align: center;
+            font-family: Ariel, sans-serif;
+            font-size: 1rem;
+            font-weight: bold;
+            background: #fbf8ff;
+            color: var(--purple);
+        }
+
+        .cipher {
+            text-align: center;
+            font-family: "Courier New", monospace;
+            font-weight: bold;
+            letter-spacing: 4px;
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            overflow-wrap: anywhere;
+            background: #f4e5ff;
+            border: 1px solid #d7b9ff;
+            border-radius: 12px;
+            padding: 18px 12px;
+            margin: 12px auto 20px;
+            max-width: 720px;
+        }
+
+        label { display: block; text-align: center; font-size: 1.15rem; font-weight: bold; margin-bottom: 8px; }
+
+        input {
             display: block;
+            width: min(100%, 720px);
+            margin: 0 auto;
+            padding: 14px 16px;
+            border: 2px solid #cbb8ff;
+            border-radius: 10px;
+            font-size: 1rem;
+            color: var(--ink);
         }
-        button{
-            padding: 10px 20px;
-            font-size: 18px;
-            background-color:rgb(216, 149, 171);
-            color:indianred;
-            border: none;
-            cursor: pointer;
-            margin-top: 20px;
-        }
-        button:hover {
-            background-color: lightpink;
-        }
-    </style>
-</head>
-<body>
-
-<!-- Intro Screen-->
- <div id="intro-screen" class="screen active">
-    <h1> Ceaser Cipher Game </h1>
-    <p> Welcome to the Ceaser Cipher Game! </p>
-    <p> In this game, you will be given a message that has been encrypted using the Ceaser Cipher. Your task is to decrypt the message and find out what it says. </p>
-    <p> To decrypt the message, you will need to know the key that was used to encrypt it. The key is a number that tells you how many letters to shift in the alphabet. For example, if the key is 3, then A becomes D, B becomes E, and so on. </p>
-    <p> Good luck and have fun! </p>
-    <button onclick="startGame()">Next</button>
-    </div>
-
-<!-- Game Screen -->
-    <div id="game" class="screen">
-        <h1> Ceaser Cipher Game </h1>
-
-        <p> Letters: <span id="letters"></span></p>
-        <p> Shift key: <span id="key"></span></p>
-        <p> Encrypted Text: <span id="cipher-text"></span></p>
-
-        <input id="guess" type="text" placeholder="Type Your Decoded Text">
-        <button onclick="checkAnswer()">Check</button>
-
-        <p id="result"></p>
-    </div>
-
-<script>
-    const phrases = [
-        "hack club",
-        "slack bot",
-        "javascript",
-        "python",
-        "html",
-        "css",
-        "programming",
-        "computer science",
-        "debug",
-        "firewall",
-        "encryption",
-        "algorithm",
-        "decryption",
-        "cybersecurity"
-    ];
-
-    let currentPlain = "";
-    let currentKey = 0;
-
-    function showLetters() {
-        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        document.getElementById("letters").textContent = letters;
-    }
-    
-    function startGame() {
-        document.getElementById("intro-screen").classList.remove("active");
-        document.getElementById("game").classList.add("active");
-        showLetters();
-        newRound();
-    }
-
-    function caesarEncrypt(text, shift) {
-        let result = "";
-        for (let char of text) {
-            const code = char.charCodeAt(0);
-
-            if (code >= 97 && code <= 122) {
-                result += String.fromCharCode(((code - 97 + shift) % 26) + 97);
-            } else if (code >= 65 && code <= 90) {
-                result += String.fromCharCode(((code - 65 + shift) % 26) + 65);
-            } else {
-                result += char;
-            }
-        }
-        return result;
-    }
-
-    function newRound() {
-        currentPlain = phrases[Math.floor(Math.random() * phrases.length)];
-
-        currentKey = Math.floor(Math.random() * 18) + 3;
-
-        const cipher = caesarEncrypt(currentPlain, currentKey);
-
-        document.getElementById("cipher-text").textContent = cipher;
-        document.getElementById("key").textContent = currentKey;
-        document.getElementById("guess").value = "";
-        document.getElementById("result").textContent = "";
-    }
-
-    function checkAnswer() {
-    const guess = document.getElementById("guess").value
-        .trim()
-        .toLowerCase();
-
-    const result = document.getElementById("result");
-
-    if (guess === currentPlain.toLowerCase()) {
-        result.textContent = "Correct! Well done!";
-        result.style.color = "green";
-    } else {
-        result.textContent = "Incorrect! Try again.";
-        result.style.color = "red";
-    }
-}
-</script>
-</body>
-</html>
