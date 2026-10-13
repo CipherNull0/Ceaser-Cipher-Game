@@ -106,6 +106,265 @@
             padding: 14px 16px;
             border: 2px solid #cbb8ff;
             border-radius: 10px;
+            background: white;
             font-size: 1rem;
             color: var(--ink);
         }
+
+        input:focus { outline: 3px solid #e9d9ff; border-color: #8c65c8;}
+
+        .actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+        button {
+            border: 0;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform .12s ease, filter .12s ease;
+        }
+        button:hover { filter: brightness(1.04); transform: translateY(-1px); }
+        button:focus-visible { outline: 3px solid #b48ce7; outline-offset: 3px; }
+        .primary { color: white; background: linear-gradient(135deg, #8b62c8, #a16bd0); min-width: 180px; }
+        .secondary { color: var(--purple-dark); background: var(--pink); }
+        .hint-button { color: #604092; background: #eee5ff; }
+        
+        #result {
+            min-height: 1.5rem;
+            margin: 16px 0 0;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 1.05rem;
+        }
+        #result.success { color: var(--green); }
+        #result.error { color: var(--red); }
+        #result.info { color: var(--purple); }
+
+        .bottom-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+        #hint-text { margin: 12px 0 0; text-align: center; color: #624b8a; }
+        .hidden { display: none !important; }
+
+        .end-screen { text-align: center; padding: 24px; }
+        .end-screen h2 { font-size: 2rem; }
+        .final-score { font-size: 2.2rem; font-weight: bold; color: var(--purple-dark); }
+
+        @media (max-width: 650px) {
+            body { padding: 12px; }
+            .stats { gap: 7px; }
+            .stat { padding: 12px 4px; }
+            .stat strong { font-size: 1.35rem; }
+            .stat-label { font-size: .85rem; }
+            .panel { padding: 14px; }
+            .alphabet { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+            .bottom-row { justify-content: center; }
+        }
+    </style>
+    <head>
+        <body>
+            <main class="container">
+                <header>
+                    <h1>🔐 Caesar Cipher Game</h1>
+                    <p> Decode the message. Beat the cipher. Earn points!</p>
+                </header>
+
+                <section id="game-screen">
+      <div class="stats" aria-label="Game statistics">
+        <div class="stat"><span class="stat-label">⭐ Score</span><strong id="score">0</strong></div>
+        <div class="stat"><span class="stat-label">🎯 Round</span><strong id="round">1 / 10</strong></div>
+        <div class="stat"><span class="stat-label">🗝️ Shift Key</span><strong id="key">—</strong></div>
+      </div>
+
+      <section class="panel">
+        <h2>Alphabet (A-Z)</h2>
+        <div id="alphabet" class="alphabet" aria-label="Alphabet reference"></div>
+      </section>
+
+        <section class="panel">
+            <h2>Encrypted Message</h2>
+            <div id="cipher-text" class="cipher" aria-live="polite">Press New Game to begin! </div>
+            
+        <form id="answer-form" novalidate>
+            <label for="guess">Your decoded message:</label>
+            <input id="guess" type="text" placeholder="Type your decoded message..." autocomplete="off" spellcheck="false">
+            <div class="actions">
+                <button class="primary" type="submit">Check Answer</button>
+            </div>
+            </form>
+
+            <p id="result" role="status" aria-live="polite"></p>
+            <p id="hint-text" class="hidden"></p>
+        </section>
+
+        <div class="bottom-row">
+        <button id="new-game" class="secondary" type="button">🔄 New Game</button>
+        <button id="hint-button" class="hint-button" type="button">💡 Show Hint</button>
+      </div>
+    </section>
+    
+    <section id="end-screen" class="panel end-screen hidden" aria-live="polite">
+            <h2>🎉 Game Complete!</h2>
+            <p>Your final score is: </p>
+            <p id="final-score" class="final-score">0 / 100</p>
+            <p id="final-message"></p>
+            <button id="play-again" class="primary" type="button">Play Again</button>
+        </section>
+    </main>
+
+        <script>
+            "use strict";
+
+        const phrases = [
+            "hack club", "slack bot", "javascript", "python", "html", "css",
+      "programming", "computer science", "debug", "firewall", "encryption",
+      "algorithm", "decryption", "cybersecurity", "hello world",
+      "keep learning", "code is fun", "great work", "think carefully",
+      "secret message"
+        ];
+
+        const Total_ROUNDS = 10;
+        const POINTS_PER_ROUND = 10;
+        let currentPlain = "";
+        let currentKey = 0;
+        let score = 0;
+        let round = 0;
+        let roundLocked = false;
+        let hintUsed = false;
+
+        const $ = (id) => document.getElementById(id);
+
+        function showAlphabet() {
+            const alphabet = $("alphabet");
+            alphabet.innerHTML = "";
+            for (const letter of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
+                const title = document.createElement("span");
+                title.className = "letter";
+                title.textContent = letter;
+                alphabet.appendChild(title);
+                }
+            }
+
+        function ceaserEncrypt(text, shift) {
+            return [...text].map(char => {
+                const code = char.charCodeAt(0);
+                if (code >= 65 && code <= 90) {
+                return String.fromCharCode(((code - 65 + shift) % 26) + 65);
+            }
+                if (code >= 97 && code <= 122) {
+                return String.fromCharCode(((code - 97 + shift) % 26) + 97);
+            }
+                return char;
+                }).join("");
+        }
+
+        function setResult(message, type) {
+             const result = $("result");
+            result.textContent = message;
+            result.className = type;
+        }
+
+        function updateStats() {
+            $("score").textContent = score;
+            $("round").textContent = `${Math.min(round, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`;
+            $("key").textContent = currentKey || "—";
+            }
+
+        function newRound() {
+            if (round >= TOTAL_ROUNDS) {
+            finishGame();
+                return;
+            }
+
+            round += 1;
+            roundLocked = false;
+            hintUsed = false;
+            currentPlain = phrases[Math.floor(Math.random() * phrases.length)];
+            // Pick a shift from 1 to 25 so every round has a meaningful key
+            currentKey = Math.floor(Math.random() * 25) + 1;
+
+            $("cipher-text").textContent = ceaserEncrypt(currentPlain, currentKey);
+            $("guess").value = "";
+            $("guess").disabled = false;
+            $("result").textContent = "";
+            $("result").className = "";
+            $("hint-text").textContent = "";
+            $("hint-text").classList.add("hidden");
+            $("hint-button").disabled = false;
+            $("hint-button").textContent = "💡 Show Hint";
+            updateStats();
+            $("guess").focus();
+            }
+
+            function checkAnswer(event) {
+                if (event) event.preventDefault();
+
+            // Do not show a wrong-answer message for an empty field.
+            const rawGuess = $("guess").value();
+            if (rawGuess.trim() == "") {
+                setResult("Please Enter your decoded message first! ✍️", "info");
+                $("guess").focus();
+                return;
+            }
+
+            if (roundLocked) {
+                setResult("You already answered this Round. Start the next round!", "info");
+                return;
+            }
+
+            const guess = rawGuess.trim().toLowerCase().replace(/\s+/g, " ");
+            const answer = currentPlain.toLowerCase().replace(/\s+/g, " ");
+
+            if (guess === answer) {
+                roundLocked = true;
+                score += POINTS_PER_ROUND;
+                updateStats();
+                setResult("✅ Correct! You earned 10 points.", "success");
+                $("guess").disabled = true;
+                $("hint-button").disabled = true;
+                window.setTimeout(() => {
+                    if (round >= TOTAL_ROUNDS) finishGame();
+                    else newRound();
+                }, 1200);
+            } else { 
+                setResult("❌ Not quite right. Try again!", "error");
+                }
+            }
+
+            function showHint() {
+                if (roundLocked) return;
+                hintUsed = true;
+                $("hint-text").textContent = 
+                    `Hint: To decode, shiftt each letter by ${currentKey}. Spaces stay the same.`;
+                $("hint-text").classList.remove("hidden");
+            }
+
+            function finishGame() { 
+                $("game-screen").classList.remove("hidden");
+                $("end-screen").classList.remove("hidden");
+                $("final-score").textContent = `${score} / ${TOTAL_ROUNDS * POINTS_PER_ROUND}`;
+                $("final-message").textContent = 
+                score == 100 ? "Perfect score! You're a cipher master! 🏆" :
+                score >= 70 ? "Great job! You're becoming a cipher expert! 🌟" :
+                score >= 40 ? "Nice effort! Keep practicing your code-breaking skills! 🔐" :
+                "Good try! Play again and see if you can beat your score! 💜";
+            }
+
+            function startGame() {
+                score = 0;
+                round = 0;
+                $("game-screen").classList.remove("hidden");
+                $("end-screen").classList.add("hidden");
+                showAlphabet();
+                newRound();
+            }
+
+            $("answer-form").addEventListener("submit", checkAnswer);
+            $("hint-button").addEventListener("click", showHint);
+            $("new-game").addEventListener("click", startGame);
+            $("play-again").addEventListener("click", startGame);
+
+            showAlphabet();
+            newRound();
+        </script>
+        </body>
+    </head>
